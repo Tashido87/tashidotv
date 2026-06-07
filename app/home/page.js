@@ -5,7 +5,7 @@ import Hero from '@/components/Hero';
 import ContentRow from '@/components/ContentRow';
 import LocalRows from '@/components/LocalRows';
 import BecauseYouWatchedRow from '@/components/BecauseYouWatchedRow';
-import { subscribeHomeRows, updateUserHeartbeat, subscribeWatchHistory } from '@/lib/db';
+import { subscribeHomeRows, subscribeWatchHistory } from '@/lib/db';
 import { useAuth } from '@/components/AuthProvider';
 import {
   getTrending,
@@ -27,19 +27,7 @@ export default function HomePage() {
   const [recentWatches, setRecentWatches] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Heartbeat tracker: increment watchHours in Firestore/LocalStorage
-  useEffect(() => {
-    if (!user?.uid) return;
 
-    // Immediately mark user active
-    updateUserHeartbeat(user.uid, 0);
-
-    const interval = setInterval(() => {
-      updateUserHeartbeat(user.uid, 20);
-    }, 20000);
-
-    return () => clearInterval(interval);
-  }, [user?.uid]);
 
   // Load row configurations from real-time Firestore sync with localStorage fallback
   useEffect(() => {

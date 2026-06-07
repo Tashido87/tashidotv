@@ -300,8 +300,8 @@ export default function StreamPlayer({
         await deleteWatchProgress(user?.uid || null, mediaType, id, activeSeason, activeEpisode);
         window.dispatchEvent(new Event('tashidotv_update'));
       } else {
-        // Throttling to 30 seconds to prevent runaway Firebase writes
-        if (Math.abs(currentTime - lastSavedProgressTimeRef.current) < 30) return;
+        // Throttling to 60 seconds to prevent runaway Firebase writes
+        if (Math.abs(currentTime - lastSavedProgressTimeRef.current) < 60) return;
         lastSavedProgressTimeRef.current = currentTime;
 
         if (hasFinishedRef.current) hasFinishedRef.current = false;
