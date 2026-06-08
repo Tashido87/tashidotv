@@ -32,19 +32,64 @@ const getLang2Letter = (code) => {
   return mapping[code] || code;
 };
 
+const SUBTITLE_LANGUAGES = [
+  { value: 'eng', label: 'English' },
+  { value: 'my', label: 'Burmese' },
+  { value: 'spa', label: 'Spanish' },
+  { value: 'fre', label: 'French' },
+  { value: 'ger', label: 'German' },
+  { value: 'off', label: 'Off' },
+];
+
+const buildUrl = (baseUrl, params = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.set(key, String(value));
+    }
+  });
+
+  const queryString = query.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+};
+
 const SERVERS = {
+  vidapi: {
+    name: 'VidAPI (Captions)',
+    supportsSubs: true,
+    supportsStartTime: true,
+    getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
+      const lang = getLang2Letter(subLang);
+      const baseUrl = mediaType === 'tv'
+        ? `https://vaplayer.ru/embed/tv/${id}/${season}/${episode}`
+        : `https://vaplayer.ru/embed/movie/${id}`;
+
+      return buildUrl(baseUrl, {
+        primaryColor: 'ffffff',
+        autoplay: '0',
+        showTitle: 'false',
+        resumeAt: startAt > 5 ? Math.floor(startAt) : undefined,
+        ds_lang: subLang && subLang !== 'off' ? lang : undefined,
+        lang: subLang && subLang !== 'off' ? lang : undefined,
+      });
+    }
+  },
   autoembed: {
-    name: 'AutoEmbed (Primary)',
+    name: 'AutoEmbed',
     supportsSubs: true,
     supportsStartTime: false,
     getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
       const lang2 = getLang2Letter(subLang);
-      const sub = subLang && subLang !== 'off' ? `?sub_lang=${lang2}` : '';
-      const uiParams = sub ? `&autohide=1` : `?autohide=1`;
+      const params = {
+        autohide: '1',
+        sub_lang: subLang && subLang !== 'off' ? lang2 : undefined,
+        ds_lang: subLang && subLang !== 'off' ? lang2 : undefined,
+        lang: subLang && subLang !== 'off' ? lang2 : undefined,
+      };
       if (mediaType === 'tv') {
-        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}${sub}${uiParams}`;
+        return buildUrl(`https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`, params);
       }
-      return `https://autoembed.co/movie/tmdb/${id}${sub}${uiParams}`;
+      return buildUrl(`https://autoembed.co/movie/tmdb/${id}`, params);
     }
   },
   vidlink: {
@@ -52,12 +97,18 @@ const SERVERS = {
     supportsSubs: true,
     supportsStartTime: true,
     getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
-      const startParam = startAt > 5 ? `&startTime=${Math.floor(startAt)}` : '';
-      const subParam = subLang && subLang !== 'off' ? `&subLang=${getLang2Letter(subLang)}&sub_lang=${getLang2Letter(subLang)}` : '';
+      const lang = getLang2Letter(subLang);
+      const params = {
+        primaryColor: 'ffffff',
+        autoplay: 'false',
+        startTime: startAt > 5 ? Math.floor(startAt) : undefined,
+        subLang: subLang && subLang !== 'off' ? lang : undefined,
+        sub_lang: subLang && subLang !== 'off' ? lang : undefined,
+      };
       if (mediaType === 'tv') {
-        return `https://vidlink.pro/tv/${id}/${season}/${episode}?primaryColor=ffffff&autoplay=false${startParam}${subParam}`;
+        return buildUrl(`https://vidlink.pro/tv/${id}/${season}/${episode}`, params);
       }
-      return `https://vidlink.pro/movie/${id}?primaryColor=ffffff&autoplay=false${startParam}${subParam}`;
+      return buildUrl(`https://vidlink.pro/movie/${id}`, params);
     }
   },
   vidsrc: {
@@ -119,7 +170,7 @@ export default function StreamPlayer({
   className
 }) {
   const [open, setOpen] = useState(false);
-  const [activeServer, setActiveServer] = useState('autoembed');
+  const [activeServer, setActiveServer] = useState('vidapi');
   const [activeSeason, setActiveSeason] = useState(season || 1);
   const [activeEpisode, setActiveEpisode] = useState(episode || 1);
   const [tvDetails, setTvDetails] = useState(null);
@@ -135,13 +186,22 @@ export default function StreamPlayer({
   const hasFinishedRef = useRef(false);
   const lastSavedProgressTimeRef = useRef(0);
   const latestPlaybackTimeRef = useRef({ currentTime: 0, durationVal: 0 });
+  const [autoResumeDetermined, setAutoResumeDetermined] = useState(mediaType !== 'tv' || !!season);
+  const [loadingProgress, setLoadingProgress] = useState(true);
 
-  // Reset hasFinishedRef and lastSavedProgressTimeRef when player is opened or dynamic parameters change
+  // Reset states when player is opened or dynamic parameters change
   useEffect(() => {
     hasFinishedRef.current = false;
     lastSavedProgressTimeRef.current = 0;
     latestPlaybackTimeRef.current = { currentTime: 0, durationVal: 0 };
-  }, [open, id, activeSeason, activeEpisode]);
+    if (open) {
+      setSavedProgress(0);
+      setLoadingProgress(true);
+      setAutoResumeDetermined(mediaType !== 'tv' || !!season);
+      setActiveSeason(season || 1);
+      setActiveEpisode(episode || 1);
+    }
+  }, [open, id, mediaType, season, episode]);
 
   // Immediate save on close / unmount
   useEffect(() => {
@@ -176,7 +236,7 @@ export default function StreamPlayer({
 
   // Load TV show most recent season and episode if not explicitly passed
   useEffect(() => {
-    if (mediaType === 'tv' && !season) {
+    if (mediaType === 'tv' && !season && open) {
       let cancelled = false;
       async function determineAutoResume() {
         try {
@@ -213,21 +273,28 @@ export default function StreamPlayer({
             if (latest.season) setActiveSeason(latest.season);
             if (latest.episode) setActiveEpisode(latest.episode);
           }
+          if (!cancelled) {
+            setAutoResumeDetermined(true);
+          }
         } catch (err) {
           console.error('Error determining auto-resume:', err);
+          if (!cancelled) {
+            setAutoResumeDetermined(true);
+          }
         }
       }
       determineAutoResume();
       return () => { cancelled = true; };
     }
-  }, [id, mediaType, season, user]);
+  }, [id, mediaType, season, user, open]);
 
   // Fetch saved progress from Firestore (or localStorage) when player opens
   useEffect(() => {
-    if (!open) return;
+    if (!open || !autoResumeDetermined) return;
     let cancelled = false;
 
     async function loadProgress() {
+      setLoadingProgress(true);
       try {
         const entry = await getWatchProgress(user?.uid || null, mediaType, id, activeSeason, activeEpisode);
         if (cancelled) return;
@@ -282,12 +349,16 @@ export default function StreamPlayer({
 
       } catch (err) {
         console.error('Error loading saved progress:', err);
+      } finally {
+        if (!cancelled) {
+          setLoadingProgress(false);
+        }
       }
     }
 
     loadProgress();
     return () => { cancelled = true; };
-  }, [open, id, mediaType, activeSeason, activeEpisode, user, title, tvDetails, posterPath, backdropPath]);
+  }, [open, autoResumeDetermined, id, mediaType, activeSeason, activeEpisode, user, title, tvDetails, posterPath, backdropPath]);
 
   const saveProgress = useCallback(async (currentTime, durationVal) => {
     try {
@@ -406,10 +477,7 @@ export default function StreamPlayer({
     }
   }, [autoOpen, handlePlayClick]);
 
-  useEffect(() => {
-    if (season) setActiveSeason(season);
-    if (episode) setActiveEpisode(episode);
-  }, [season, episode]);
+
 
   useEffect(() => {
     if (!open) return;
@@ -428,13 +496,19 @@ export default function StreamPlayer({
     const handlePlayerMessage = (event) => {
       // Allow any valid origin to emit PLAYER_EVENT
       if (event.data?.type === 'PLAYER_EVENT') {
-        const { event: eventType, currentTime, duration: durationVal } = event.data.data;
-        if (currentTime && durationVal) {
+        const payload = event.data.data || {};
+        const eventType = payload.event || payload.player_status;
+        const currentTime = Number(payload.currentTime ?? payload.player_progress);
+        const durationVal = Number(payload.duration ?? payload.player_duration);
+        const hasTiming = Number.isFinite(currentTime) && Number.isFinite(durationVal) && durationVal > 0;
+
+        if (hasTiming) {
           latestPlaybackTimeRef.current = { currentTime, durationVal };
         }
-        if (eventType === 'timeupdate' && currentTime && durationVal) {
+
+        if ((eventType === 'timeupdate' || eventType === 'playing') && hasTiming) {
           saveProgress(currentTime, durationVal);
-        } else if (eventType === 'pause' && currentTime && durationVal) {
+        } else if ((eventType === 'pause' || eventType === 'paused' || eventType === 'seeked') && hasTiming) {
           setWatchProgress(user?.uid || null, {
             mediaType,
             id,
@@ -448,6 +522,8 @@ export default function StreamPlayer({
           }).then(() => {
             window.dispatchEvent(new Event('tashidotv_update'));
           }).catch(err => console.warn('Sync on pause failed:', err));
+        } else if (eventType === 'completed' && hasTiming) {
+          saveProgress(durationVal, durationVal);
         }
       }
     };
@@ -525,6 +601,31 @@ export default function StreamPlayer({
               ))}
             </div>
 
+            {SERVERS[activeServer].supportsSubs && (
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 backdrop-blur-md px-4 py-1.5 rounded-full select-none shrink-0">
+                <span className="text-[11px] font-semibold tracking-wider text-white/50 uppercase">Subtitles</span>
+                <div className="relative inline-flex items-center">
+                  <select
+                    value={subLang}
+                    onChange={(e) => {
+                      setSubLang(e.target.value);
+                      setLoadStatus('loading');
+                    }}
+                    className="appearance-none bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg px-2.5 py-0.5 text-center text-xs font-bold text-white focus:outline-none transition cursor-pointer pr-6"
+                  >
+                    {SUBTITLE_LANGUAGES.map((lang) => (
+                      <option key={lang.value} value={lang.value} className="bg-zinc-900 text-white">
+                        {lang.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute right-1.5 text-white/60">
+                    <ChevronDown className="w-3 h-3" />
+                  </span>
+                </div>
+              </div>
+            )}
+
 
             {/* TV Show Episode Selectors */}
             {mediaType === 'tv' && (
@@ -596,28 +697,32 @@ export default function StreamPlayer({
                 left: 0;
               }
             `}} />
-            <iframe
-              key={`${activeServer}-${activeSeason}-${activeEpisode}-${subLang}`}
-              src={src}
-              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-              allowFullScreen
-              loading="eager"
-              onLoad={() => setLoadStatus('loaded')}
-              className="stream-iframe-player border-0 w-full h-full max-w-full max-h-full m-auto"
-              title="Stream Player"
-            />
+            {!loadingProgress ? (
+              <iframe
+                key={`${activeServer}-${activeSeason}-${activeEpisode}-${subLang}`}
+                src={src}
+                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                allowFullScreen
+                loading="eager"
+                onLoad={() => setLoadStatus('loaded')}
+                className="stream-iframe-player border-0 w-full h-full max-w-full max-h-full m-auto"
+                title="Stream Player"
+              />
+            ) : null}
 
             {/* Loading / Error Overlays */}
-            {loadStatus !== 'loaded' && (
+            {(loadingProgress || loadStatus !== 'loaded') && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-20 transition-opacity duration-300">
-                {loadStatus === 'loading' && (
+                {(loadingProgress || loadStatus === 'loading') && (
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-8 h-8 animate-spin text-white/70" />
-                    <p className="text-[12px] tracking-wider text-white/50 uppercase">Loading stream…</p>
+                    <p className="text-[12px] tracking-wider text-white/50 uppercase">
+                      {loadingProgress ? 'Loading progress…' : 'Loading stream…'}
+                    </p>
                   </div>
                 )}
 
-                {loadStatus === 'slow' && (
+                {!loadingProgress && loadStatus === 'slow' && (
                   <div className="flex flex-col items-center gap-3 text-center px-6">
                     <Loader2 className="w-8 h-8 animate-spin text-white/40" />
                     <p className="text-sm text-white/60">Taking longer than usual…</p>
@@ -627,7 +732,7 @@ export default function StreamPlayer({
                   </div>
                 )}
 
-                {loadStatus === 'error' && (
+                {!loadingProgress && loadStatus === 'error' && (
                   <div className="flex flex-col items-center gap-4 text-center px-6">
                     <AlertTriangle className="w-10 h-10 text-yellow-500" />
                     <div>
@@ -666,10 +771,10 @@ export default function StreamPlayer({
                 </button>{' '}
                 or{' '}
                 <button 
-                  onClick={() => { setActiveServer('vidsrc'); setLoadStatus('loading'); }} 
+                  onClick={() => { setActiveServer('vidapi'); setLoadStatus('loading'); }}
                   className="text-white hover:underline font-bold transition decoration-amber-400 cursor-pointer"
                 >
-                  Vidsrc
+                  VidAPI
                 </button>{' '}
                 servers.
               </p>

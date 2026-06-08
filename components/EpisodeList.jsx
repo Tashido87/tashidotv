@@ -183,7 +183,7 @@ export default function EpisodeList({
                 posterPath={tvShowPoster}
                 backdropPath={tvShowBackdrop}
                 className="cursor-pointer group shrink-0 w-72 md:w-80 lg:w-96"
-                autoOpen={isDeepLinkPlay}
+                autoOpen={false}
               >
                 <div className="relative aspect-[16/9] rounded-2xl overflow-hidden bg-zinc-800 contain-content border border-white/10 transition-all duration-300 hover:scale-[1.02] hover:border-white/20 hover:shadow-2xl">
                   {/* Still photo */}
