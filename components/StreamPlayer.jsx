@@ -59,7 +59,6 @@ const SERVERS = {
     supportsSubs: true,
     supportsStartTime: true,
     getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
-      const lang = getLang2Letter(subLang);
       const baseUrl = mediaType === 'tv'
         ? `https://vaplayer.ru/embed/tv/${id}/${season}/${episode}`
         : `https://vaplayer.ru/embed/movie/${id}`;
@@ -69,8 +68,8 @@ const SERVERS = {
         autoplay: '0',
         showTitle: 'false',
         resumeAt: startAt > 5 ? Math.floor(startAt) : undefined,
-        ds_lang: subLang && subLang !== 'off' ? lang : undefined,
-        lang: subLang && subLang !== 'off' ? lang : undefined,
+        ds_lang: subLang && subLang !== 'off' ? subLang : undefined,
+        lang: subLang && subLang !== 'off' ? subLang : undefined,
       });
     }
   },
