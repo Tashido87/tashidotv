@@ -54,8 +54,22 @@ const buildUrl = (baseUrl, params = {}) => {
 };
 
 const SERVERS = {
+  autoembed: {
+    name: 'AutoEmbed (Primary)',
+    supportsSubs: true,
+    supportsStartTime: false,
+    getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
+      const lang2 = getLang2Letter(subLang);
+      const sub = subLang && subLang !== 'off' ? `?sub_lang=${lang2}` : '';
+      const uiParams = sub ? `&autohide=1` : `?autohide=1`;
+      if (mediaType === 'tv') {
+        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}${sub}${uiParams}`;
+      }
+      return `https://autoembed.co/movie/tmdb/${id}${sub}${uiParams}`;
+    }
+  },
   vidapi: {
-    name: 'VidAPI (Captions)',
+    name: 'VidAPI',
     supportsSubs: true,
     supportsStartTime: true,
     getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
@@ -71,24 +85,6 @@ const SERVERS = {
         ds_lang: subLang && subLang !== 'off' ? subLang : undefined,
         lang: subLang && subLang !== 'off' ? subLang : undefined,
       });
-    }
-  },
-  autoembed: {
-    name: 'AutoEmbed',
-    supportsSubs: true,
-    supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
-      const lang2 = getLang2Letter(subLang);
-      const params = {
-        autohide: '1',
-        sub_lang: subLang && subLang !== 'off' ? lang2 : undefined,
-        ds_lang: subLang && subLang !== 'off' ? lang2 : undefined,
-        lang: subLang && subLang !== 'off' ? lang2 : undefined,
-      };
-      if (mediaType === 'tv') {
-        return buildUrl(`https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`, params);
-      }
-      return buildUrl(`https://autoembed.co/movie/tmdb/${id}`, params);
     }
   },
   vidlink: {
@@ -169,7 +165,7 @@ export default function StreamPlayer({
   className
 }) {
   const [open, setOpen] = useState(false);
-  const [activeServer, setActiveServer] = useState('vidapi');
+  const [activeServer, setActiveServer] = useState('autoembed');
   const [activeSeason, setActiveSeason] = useState(season || 1);
   const [activeEpisode, setActiveEpisode] = useState(episode || 1);
   const [tvDetails, setTvDetails] = useState(null);
