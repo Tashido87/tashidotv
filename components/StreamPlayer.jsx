@@ -56,21 +56,18 @@ const buildUrl = (baseUrl, params = {}) => {
 const SERVERS = {
   autoembed: {
     name: 'AutoEmbed (Primary)',
-    supportsSubs: true,
+    supportsSubs: false,
     supportsStartTime: false,
     getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
-      const lang2 = getLang2Letter(subLang);
-      const sub = subLang && subLang !== 'off' ? `?sub_lang=${lang2}` : '';
-      const uiParams = sub ? `&autohide=1` : `?autohide=1`;
       if (mediaType === 'tv') {
-        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}${sub}${uiParams}`;
+        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}?autohide=1`;
       }
-      return `https://autoembed.co/movie/tmdb/${id}${sub}${uiParams}`;
+      return `https://autoembed.co/movie/tmdb/${id}?autohide=1`;
     }
   },
   vidapi: {
     name: 'VidAPI',
-    supportsSubs: true,
+    supportsSubs: false,
     supportsStartTime: true,
     getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
       const baseUrl = mediaType === 'tv'
@@ -82,8 +79,6 @@ const SERVERS = {
         autoplay: '0',
         showTitle: 'false',
         resumeAt: startAt > 5 ? Math.floor(startAt) : undefined,
-        ds_lang: subLang && subLang !== 'off' ? subLang : undefined,
-        lang: subLang && subLang !== 'off' ? subLang : undefined,
       });
     }
   },
@@ -752,26 +747,19 @@ export default function StreamPlayer({
             )}
           </div>
  
-          {/* Subtitle Fallback Warning Toast */}
-          {activeServer === 'autoembed' && subLang !== 'off' && (
-            <div className="w-full max-w-7xl mx-4 mt-3 bg-amber-500/10 border border-amber-500/25 px-5 py-3 rounded-2xl flex items-center gap-3 backdrop-blur-xl z-10 animate-fade-in">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+          {/* Subtitle Info Toast for AutoEmbed */}
+          {activeServer === 'autoembed' && (
+            <div className="w-full max-w-7xl mx-4 mt-3 bg-blue-500/10 border border-blue-500/25 px-5 py-3 rounded-2xl flex items-center gap-3 backdrop-blur-xl z-10 animate-fade-in">
+              <AlertTriangle className="w-4 h-4 text-blue-400 shrink-0" />
               <p className="text-[12px] text-zinc-300 leading-normal font-semibold">
-                AutoEmbed subtitles failing? Try switching to the more reliable{' '}
-                <button 
-                  onClick={() => { setActiveServer('vidlink'); setLoadStatus('loading'); }} 
-                  className="text-white hover:underline font-bold transition decoration-amber-400 cursor-pointer"
+                Use the player&apos;s built-in <span className="text-white">CC button</span> for subtitles. For language selection, switch to{' '}
+                <button
+                  onClick={() => { setActiveServer('vidlink'); setLoadStatus('loading'); }}
+                  className="text-white hover:underline font-bold transition decoration-blue-400 cursor-pointer"
                 >
                   VidLink
-                </button>{' '}
-                or{' '}
-                <button 
-                  onClick={() => { setActiveServer('vidapi'); setLoadStatus('loading'); }}
-                  className="text-white hover:underline font-bold transition decoration-amber-400 cursor-pointer"
-                >
-                  VidAPI
-                </button>{' '}
-                servers.
+                </button>
+                .
               </p>
             </div>
           )}
