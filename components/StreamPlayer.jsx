@@ -21,26 +21,6 @@ function parseTime(str) {
   return parts[0] || 0;
 }
 
-const getLang2Letter = (code) => {
-  const mapping = {
-    eng: 'en',
-    my: 'my',
-    spa: 'es',
-    fre: 'fr',
-    ger: 'de',
-  };
-  return mapping[code] || code;
-};
-
-const SUBTITLE_LANGUAGES = [
-  { value: 'eng', label: 'English' },
-  { value: 'my', label: 'Burmese' },
-  { value: 'spa', label: 'Spanish' },
-  { value: 'fre', label: 'French' },
-  { value: 'ger', label: 'German' },
-  { value: 'off', label: 'Off' },
-];
-
 const buildUrl = (baseUrl, params = {}) => {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -54,11 +34,25 @@ const buildUrl = (baseUrl, params = {}) => {
 };
 
 const SERVERS = {
+  vidlink: {
+    name: 'VidLink (Primary)',
+    supportsStartTime: true,
+    getUrl: (mediaType, id, season, episode, startAt = 0) => {
+      const params = {
+        primaryColor: 'ffffff',
+        autoplay: 'false',
+        startTime: startAt > 5 ? Math.floor(startAt) : undefined,
+      };
+      if (mediaType === 'tv') {
+        return buildUrl(`https://vidlink.pro/tv/${id}/${season}/${episode}`, params);
+      }
+      return buildUrl(`https://vidlink.pro/movie/${id}`, params);
+    }
+  },
   autoembed: {
-    name: 'AutoEmbed (Primary)',
-    supportsSubs: false,
+    name: 'AutoEmbed',
     supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
+    getUrl: (mediaType, id, season, episode, startAt = 0) => {
       if (mediaType === 'tv') {
         return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}?autohide=1`;
       }
@@ -67,9 +61,8 @@ const SERVERS = {
   },
   vidapi: {
     name: 'VidAPI',
-    supportsSubs: false,
     supportsStartTime: true,
-    getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
+    getUrl: (mediaType, id, season, episode, startAt = 0) => {
       const baseUrl = mediaType === 'tv'
         ? `https://vaplayer.ru/embed/tv/${id}/${season}/${episode}`
         : `https://vaplayer.ru/embed/movie/${id}`;
@@ -82,30 +75,10 @@ const SERVERS = {
       });
     }
   },
-  vidlink: {
-    name: 'VidLink',
-    supportsSubs: true,
-    supportsStartTime: true,
-    getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
-      const lang = getLang2Letter(subLang);
-      const params = {
-        primaryColor: 'ffffff',
-        autoplay: 'false',
-        startTime: startAt > 5 ? Math.floor(startAt) : undefined,
-        subLang: subLang && subLang !== 'off' ? lang : undefined,
-        sub_lang: subLang && subLang !== 'off' ? lang : undefined,
-      };
-      if (mediaType === 'tv') {
-        return buildUrl(`https://vidlink.pro/tv/${id}/${season}/${episode}`, params);
-      }
-      return buildUrl(`https://vidlink.pro/movie/${id}`, params);
-    }
-  },
   vidsrc: {
     name: 'VidSrc',
-    supportsSubs: false,
     supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
+    getUrl: (mediaType, id, season, episode, startAt = 0) => {
       if (mediaType === 'tv') {
         return `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`;
       }
@@ -114,9 +87,8 @@ const SERVERS = {
   },
   embedsu: {
     name: 'Embed.su',
-    supportsSubs: false,
     supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
+    getUrl: (mediaType, id, season, episode, startAt = 0) => {
       if (mediaType === 'tv') {
         return `https://embed.su/embed/tv/${id}/${season}/${episode}`;
       }
@@ -125,9 +97,8 @@ const SERVERS = {
   },
   superembed: {
     name: 'SuperEmbed',
-    supportsSubs: false,
     supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
+    getUrl: (mediaType, id, season, episode, startAt = 0) => {
       if (mediaType === 'tv') {
         return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
       }
@@ -136,9 +107,8 @@ const SERVERS = {
   },
   smashy: {
     name: 'SmashyStream',
-    supportsSubs: false,
     supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode, subLang = 'eng', startAt = 0) => {
+    getUrl: (mediaType, id, season, episode, startAt = 0) => {
       if (mediaType === 'tv') {
         return `https://player.smashy.stream/tv/${id}?s=${season}&e=${episode}`;
       }
@@ -160,14 +130,14 @@ export default function StreamPlayer({
   className
 }) {
   const [open, setOpen] = useState(false);
-  const [activeServer, setActiveServer] = useState('autoembed');
+  const [activeServer, setActiveServer] = useState('vidlink');
   const [activeSeason, setActiveSeason] = useState(season || 1);
   const [activeEpisode, setActiveEpisode] = useState(episode || 1);
   const [tvDetails, setTvDetails] = useState(null);
   const [seasonDetails, setSeasonDetails] = useState(null);
   const [savedProgress, setSavedProgress] = useState(0);
   const [loadStatus, setLoadStatus] = useState('idle');
-  const [subLang, setSubLang] = useState('eng');
+
   const [manualTime, setManualTime] = useState('00:00:00');
   const [durationEstimate, setDurationEstimate] = useState(0);
   const [saveToast, setSaveToast] = useState(null);
@@ -552,7 +522,7 @@ export default function StreamPlayer({
     setLoadStatus('loading');
   }, [activeServer]);
 
-  const src = SERVERS[activeServer].getUrl(mediaType, id, activeSeason, activeEpisode, subLang, savedProgress);
+  const src = SERVERS[activeServer].getUrl(mediaType, id, activeSeason, activeEpisode, savedProgress);
 
   return (
     <>
@@ -591,30 +561,7 @@ export default function StreamPlayer({
               ))}
             </div>
 
-            {SERVERS[activeServer].supportsSubs && (
-              <div className="flex items-center gap-2 bg-white/5 border border-white/10 backdrop-blur-md px-4 py-1.5 rounded-full select-none shrink-0">
-                <span className="text-[11px] font-semibold tracking-wider text-white/50 uppercase">Subtitles</span>
-                <div className="relative inline-flex items-center">
-                  <select
-                    value={subLang}
-                    onChange={(e) => {
-                      setSubLang(e.target.value);
-                      setLoadStatus('loading');
-                    }}
-                    className="appearance-none bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg px-2.5 py-0.5 text-center text-xs font-bold text-white focus:outline-none transition cursor-pointer pr-6"
-                  >
-                    {SUBTITLE_LANGUAGES.map((lang) => (
-                      <option key={lang.value} value={lang.value} className="bg-zinc-900 text-white">
-                        {lang.label}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute right-1.5 text-white/60">
-                    <ChevronDown className="w-3 h-3" />
-                  </span>
-                </div>
-              </div>
-            )}
+
 
 
             {/* TV Show Episode Selectors */}
@@ -689,7 +636,7 @@ export default function StreamPlayer({
             `}} />
             {!loadingProgress ? (
               <iframe
-                key={`${activeServer}-${activeSeason}-${activeEpisode}-${subLang}`}
+                key={`${activeServer}-${activeSeason}-${activeEpisode}`}
                 src={src}
                 allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
                 allowFullScreen
@@ -747,19 +694,19 @@ export default function StreamPlayer({
             )}
           </div>
  
-          {/* Subtitle Info Toast for AutoEmbed */}
-          {activeServer === 'autoembed' && (
+          {/* Subtitle Info Toast for AutoEmbed/VidAPI */}
+          {(activeServer === 'autoembed' || activeServer === 'vidapi') && (
             <div className="w-full max-w-7xl mx-4 mt-3 bg-blue-500/10 border border-blue-500/25 px-5 py-3 rounded-2xl flex items-center gap-3 backdrop-blur-xl z-10 animate-fade-in">
               <AlertTriangle className="w-4 h-4 text-blue-400 shrink-0" />
               <p className="text-[12px] text-zinc-300 leading-normal font-semibold">
-                Use the player&apos;s built-in <span className="text-white">CC button</span> for subtitles. For language selection, switch to{' '}
+                If the player&apos;s subtitle search is stuck, try switching to{' '}
                 <button
                   onClick={() => { setActiveServer('vidlink'); setLoadStatus('loading'); }}
                   className="text-white hover:underline font-bold transition decoration-blue-400 cursor-pointer"
                 >
                   VidLink
                 </button>
-                .
+                {' '}which automatically loads English subtitles if available.
               </p>
             </div>
           )}
