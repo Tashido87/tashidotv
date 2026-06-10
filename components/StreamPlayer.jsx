@@ -639,7 +639,6 @@ export default function StreamPlayer({
                 key={`${activeServer}-${activeSeason}-${activeEpisode}`}
                 src={src}
                 allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
                 allowFullScreen
                 loading="eager"
                 onLoad={() => setLoadStatus('loaded')}
