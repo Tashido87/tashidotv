@@ -7,6 +7,13 @@ const nextConfig = {
     ],
   },
   reactStrictMode: true,
+  async rewrites() {
+    return [
+      { source: '/movie/:id', destination: '/movie' },
+      { source: '/tv/:id', destination: '/tv' },
+      { source: '/person/:id', destination: '/person' }
+    ];
+  }
 };
 
 export default nextConfig;

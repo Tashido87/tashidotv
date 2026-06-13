@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { ChevronDown, MoreHorizontal, Check, Eye, EyeOff, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getTVSeasonDetails, IMG } from '@/lib/tmdb';
@@ -12,9 +12,12 @@ export default function EpisodeList({
   tvShowName,
   tvShowPoster,
   tvShowBackdrop,
-  searchParams
+  initialSeason
 }) {
-  const validSeasons = seasons.filter((s) => s.season_number !== undefined);
+  const validSeasons = useMemo(
+    () => seasons.filter((s) => s.season_number !== undefined),
+    [seasons]
+  );
   const defaultSeason = validSeasons.find((s) => s.season_number === 1) || validSeasons[0];
 
   const scroller = useRef(null);
@@ -26,8 +29,8 @@ export default function EpisodeList({
 
   // Deep-linking support: active season defaults to parameter if present
   const [activeSeason, setActiveSeason] = useState(() => {
-    if (searchParams?.season) {
-      const num = Number(searchParams.season);
+    if (initialSeason) {
+      const num = Number(initialSeason);
       if (validSeasons.some((s) => s.season_number === num)) {
         return num;
       }
@@ -43,6 +46,14 @@ export default function EpisodeList({
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    if (!initialSeason) return;
+    const num = Number(initialSeason);
+    if (validSeasons.some((s) => s.season_number === num)) {
+      setActiveSeason(num);
+    }
+  }, [initialSeason, validSeasons]);
 
   useEffect(() => {
     try {
@@ -170,7 +181,6 @@ export default function EpisodeList({
         >
           {episodes.map((ep) => {
             const isWatched = watchedEpisodes[`tv_${tvId}_s${activeSeason}_e${ep.episode_number}`];
-            const isDeepLinkPlay = searchParams?.season === String(activeSeason) && searchParams?.episode === String(ep.episode_number);
 
             return (
               <StreamPlayer

@@ -2,15 +2,37 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-import { IMG } from '@/lib/tmdb';
+import { getTrending, IMG } from '@/lib/tmdb';
 import { Tv } from 'lucide-react';
 
-export default function LandingClient({ trendingItems }) {
+export default function LandingClient({ trendingItems = [] }) {
   const { loginWithGoogle, user, loading } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [clientTrendingItems, setClientTrendingItems] = useState(trendingItems);
+
+  useEffect(() => {
+    if (clientTrendingItems.length > 0) return;
+
+    let cancelled = false;
+    async function loadTrendingBackdrops() {
+      try {
+        const trending = await getTrending('all', 'week');
+        if (!cancelled) {
+          setClientTrendingItems(trending?.results || []);
+        }
+      } catch (err) {
+        console.error('Error loading landing backdrops:', err);
+      }
+    }
+
+    loadTrendingBackdrops();
+    return () => {
+      cancelled = true;
+    };
+  }, [clientTrendingItems.length]);
 
   // Filter trending items to only those that have valid backdrop paths
-  const slides = (trendingItems || []).filter((item) => item.backdrop_path).slice(0, 8);
+  const slides = (clientTrendingItems || []).filter((item) => item.backdrop_path).slice(0, 8);
 
   // Automatic slideshow transition
   useEffect(() => {

@@ -20,7 +20,7 @@ function formatRuntime(min) {
   return h ? `${h}h ${m}m` : `${m}m`;
 }
 
-export default function DetailView({ data, mediaType, autoPlay = false, searchParams, similarItems }) {
+export default function DetailView({ data, mediaType, similarItems }) {
   const { user } = useAuth();
   const title = data.title || data.name;
   const release = data.release_date || data.first_air_date;
@@ -35,6 +35,25 @@ export default function DetailView({ data, mediaType, autoPlay = false, searchPa
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showTrailer, setShowTrailer] = useState(false);
+  const [playParams, setPlayParams] = useState({
+    autoPlay: false,
+    season: undefined,
+    episode: undefined,
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const season = Number(params.get('season'));
+    const episode = Number(params.get('episode'));
+
+    setPlayParams({
+      autoPlay: params.get('play') === '1',
+      season: Number.isFinite(season) && season > 0 ? season : undefined,
+      episode: Number.isFinite(episode) && episode > 0 ? episode : undefined,
+    });
+
+    document.title = `${title} — Tashido TV`;
+  }, [title]);
 
   const trailerKey = (() => {
     const list = data.videos?.results || [];
@@ -285,9 +304,9 @@ export default function DetailView({ data, mediaType, autoPlay = false, searchPa
                 <StreamPlayer
                   id={data.id}
                   mediaType={mediaType}
-                  autoOpen={autoPlay}
-                  season={searchParams?.season ? Number(searchParams.season) : undefined}
-                  episode={searchParams?.episode ? Number(searchParams.episode) : undefined}
+                  autoOpen={playParams.autoPlay}
+                  season={playParams.season}
+                  episode={playParams.episode}
                   title={data.title || data.name}
                   posterPath={data.poster_path}
                   backdropPath={data.backdrop_path}
@@ -385,7 +404,7 @@ export default function DetailView({ data, mediaType, autoPlay = false, searchPa
           tvShowName={data.name}
           tvShowPoster={data.poster_path}
           tvShowBackdrop={data.backdrop_path}
-          searchParams={searchParams}
+          initialSeason={playParams.season}
         />
       )}
 
