@@ -78,6 +78,20 @@ export default function HomePage() {
     return () => unsubscribe();
   }, [user]);
 
+  // Remove "Because you watched" rows when items are removed from Continue Watching
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      if (e.detail?.action === 'delete') {
+        const { mediaType, id } = e.detail;
+        setRecentWatches(prev =>
+          prev.filter(item => !(String(item.id) === String(id) && (item.mediaType || 'movie') === mediaType))
+        );
+      }
+    };
+    window.addEventListener('tashidotv_update', handleUpdate);
+    return () => window.removeEventListener('tashidotv_update', handleUpdate);
+  }, []);
+
   // Fetch row items dynamically based on visibility and config type
   useEffect(() => {
     if (rows.length === 0) return;
