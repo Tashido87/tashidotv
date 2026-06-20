@@ -79,15 +79,15 @@ export default function LocalRows() {
     const season = item.season || 0;
     const episode = item.episode || 0;
 
-    // Remove from both Firestore + localStorage via unified utility
-    await deleteWatchProgress(user?.uid || null, mediaType, itemId, season, episode);
-
-    // Update local state immediately
+    // Update local state immediately BEFORE network request
     setContinueWatching(prev => prev.filter(p => !(String(p.id) === itemId && (p.mediaType || 'movie') === mediaType)));
     
     // Dispatch sync event
     window.dispatchEvent(new CustomEvent('tashidotv_update', { detail: { action: 'delete', mediaType, id: itemId } }));
     setActiveDropdown(null);
+
+    // Remove from both Firestore + localStorage via unified utility in background
+    deleteWatchProgress(user?.uid || null, mediaType, itemId, season, episode).catch(console.error);
   };
 
   if (!isMounted) return null;

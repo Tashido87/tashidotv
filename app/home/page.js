@@ -46,30 +46,8 @@ export default function HomePage() {
     let unsubscribe = () => {};
 
     try {
-      unsubscribe = subscribeWatchHistory(user?.uid || null, (firestoreItems) => {
-        let localItems = [];
-        try {
-          const progressData = localStorage.getItem('tashidotv_progress');
-          if (progressData) {
-            localItems = Object.values(JSON.parse(progressData));
-          }
-        } catch (e) {}
-
-        const mergedMap = new Map();
-        const allItems = [...localItems, ...firestoreItems];
-
-        for (const item of allItems) {
-          const key = `${item.mediaType}_${item.id}`;
-          const existing = mergedMap.get(key);
-          if (!existing || (item.updatedAt || 0) > (existing.updatedAt || 0)) {
-            mergedMap.set(key, item);
-          }
-        }
-
-        const mergedItems = Array.from(mergedMap.values());
-        mergedItems.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-
-        setRecentWatches(mergedItems.slice(0, 5));
+      unsubscribe = subscribeWatchHistory(user?.uid || null, (items) => {
+        setRecentWatches(items.slice(0, 5));
       });
     } catch (err) {
       console.error('Failed to initialize watch history subscription for home page:', err);
