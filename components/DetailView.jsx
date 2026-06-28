@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Star, Clock, Calendar, Plus, Share2, ChevronRight, Check, Play, X } from 'lucide-react';
 import { IMG } from '@/lib/tmdb';
+import { searchYouTubeTrailer } from '@/lib/youtube';
 import StreamPlayer from './StreamPlayer';
 import ContentRow from './ContentRow';
 import EpisodeList from './EpisodeList';
@@ -35,7 +36,7 @@ export default function DetailView({ data, mediaType, similarItems }) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showTrailer, setShowTrailer] = useState(false);
-  const [youtubeSearchFallback, setYoutubeSearchFallback] = useState(null);
+  const [fallbackTrailerKey, setFallbackTrailerKey] = useState(null);
   const [playParams, setPlayParams] = useState({
     autoPlay: false,
     season: undefined,
@@ -107,15 +108,24 @@ export default function DetailView({ data, mediaType, similarItems }) {
     return best?.key || ytVideos[0]?.key;
   })();
 
-  // Build a YouTube search fallback URL when TMDB has no trailer
+  // Auto-search YouTube for a trailer when TMDB has no video data
   useEffect(() => {
-    if (!trailerKey && title) {
-      const searchQuery = `${title} ${year ? year + ' ' : ''}official trailer`;
-      setYoutubeSearchFallback(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`);
-    } else {
-      setYoutubeSearchFallback(null);
+    if (trailerKey || !title) {
+      setFallbackTrailerKey(null);
+      return;
     }
+
+    let cancelled = false;
+    searchYouTubeTrailer(title, year).then((videoId) => {
+      if (!cancelled && videoId) {
+        setFallbackTrailerKey(videoId);
+      }
+    });
+
+    return () => { cancelled = true; };
   }, [trailerKey, title, year]);
+
+  const activeTrailerKey = trailerKey || fallbackTrailerKey;
 
   useEffect(() => {
     if (showTrailer) {
@@ -333,7 +343,7 @@ export default function DetailView({ data, mediaType, similarItems }) {
                   {inWatchlist ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                   My List
                 </button>
-                {trailerKey ? (
+                {activeTrailerKey && (
                   <button
                     onClick={() => setShowTrailer(true)}
                     className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/15 font-semibold text-[14px] px-6 py-3 rounded-full transition duration-300 backdrop-blur-md active:scale-95"
@@ -341,17 +351,7 @@ export default function DetailView({ data, mediaType, similarItems }) {
                     <Play className="w-4 h-4 text-white fill-white" />
                     Watch Trailer
                   </button>
-                ) : youtubeSearchFallback ? (
-                  <a
-                    href={youtubeSearchFallback}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/15 font-semibold text-[14px] px-6 py-3 rounded-full transition duration-300 backdrop-blur-md active:scale-95"
-                  >
-                    <Play className="w-4 h-4 text-white fill-white" />
-                    Watch Trailer
-                  </a>
-                ) : null}
+                )}
                 <button
                   onClick={handleShare}
                   className="p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/15 hover:bg-white/20 transition active:scale-95"
@@ -435,7 +435,7 @@ export default function DetailView({ data, mediaType, similarItems }) {
       )}
 
       {/* Premium YouTube Trailer Modal */}
-      {showTrailer && trailerKey && (
+      {showTrailer && activeTrailerKey && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 flex items-center justify-center p-4 md:p-10 transition-all duration-300">
           <div className="relative w-full max-w-5xl aspect-[16/9] rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl shadow-black/80">
             {/* Close Button */}
@@ -447,7 +447,7 @@ export default function DetailView({ data, mediaType, similarItems }) {
               <X className="w-5 h-5" />
             </button>
             <iframe
-              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&showinfo=0&controls=1`}
+              src={`https://www.youtube.com/embed/${activeTrailerKey}?autoplay=1&rel=0&showinfo=0&controls=1`}
               title="Official Trailer"
               className="absolute top-0 left-0 w-full h-full border-0 object-contain max-h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
