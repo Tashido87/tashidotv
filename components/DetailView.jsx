@@ -35,6 +35,7 @@ export default function DetailView({ data, mediaType, similarItems }) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showTrailer, setShowTrailer] = useState(false);
+  const [youtubeSearchFallback, setYoutubeSearchFallback] = useState(null);
   const [playParams, setPlayParams] = useState({
     autoPlay: false,
     season: undefined,
@@ -105,6 +106,16 @@ export default function DetailView({ data, mediaType, similarItems }) {
     );
     return best?.key || ytVideos[0]?.key;
   })();
+
+  // Build a YouTube search fallback URL when TMDB has no trailer
+  useEffect(() => {
+    if (!trailerKey && title) {
+      const searchQuery = `${title} ${year ? year + ' ' : ''}official trailer`;
+      setYoutubeSearchFallback(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`);
+    } else {
+      setYoutubeSearchFallback(null);
+    }
+  }, [trailerKey, title, year]);
 
   useEffect(() => {
     if (showTrailer) {
@@ -322,7 +333,7 @@ export default function DetailView({ data, mediaType, similarItems }) {
                   {inWatchlist ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                   My List
                 </button>
-                {trailerKey && (
+                {trailerKey ? (
                   <button
                     onClick={() => setShowTrailer(true)}
                     className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/15 font-semibold text-[14px] px-6 py-3 rounded-full transition duration-300 backdrop-blur-md active:scale-95"
@@ -330,7 +341,17 @@ export default function DetailView({ data, mediaType, similarItems }) {
                     <Play className="w-4 h-4 text-white fill-white" />
                     Watch Trailer
                   </button>
-                )}
+                ) : youtubeSearchFallback ? (
+                  <a
+                    href={youtubeSearchFallback}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/15 font-semibold text-[14px] px-6 py-3 rounded-full transition duration-300 backdrop-blur-md active:scale-95"
+                  >
+                    <Play className="w-4 h-4 text-white fill-white" />
+                    Watch Trailer
+                  </a>
+                ) : null}
                 <button
                   onClick={handleShare}
                   className="p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/15 hover:bg-white/20 transition active:scale-95"
