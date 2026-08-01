@@ -491,9 +491,9 @@ export default function StreamPlayer({
       )}
 
       {open && (
-        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center animate-fade-in">
+        <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-start pt-20 md:pt-24 pb-6 overflow-y-auto animate-fade-in">
           {/* Top Panel: Server Selector & TV Episode Controls */}
-          <div className="w-full max-w-7xl mx-4 mb-4 px-4 flex flex-col md:flex-row gap-4 items-center justify-between z-10">
+          <div className="w-full max-w-7xl mx-4 mb-4 px-4 flex flex-col md:flex-row gap-4 items-center justify-between z-20 relative shrink-0">
             {/* Servers */}
             <div className="flex w-full md:w-auto overflow-x-auto scrollbar-hide gap-2 p-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
               {Object.entries(SERVERS).map(([key, server]) => (
