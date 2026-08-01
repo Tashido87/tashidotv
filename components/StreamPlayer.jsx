@@ -45,16 +45,6 @@ const SERVERS = {
       return buildUrl(`https://player.videasy.net/movie/${id}`, params);
     }
   },
-  vidsrc_cc: {
-    name: 'VidSrc CC',
-    supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode) => {
-      if (mediaType === 'tv') {
-        return `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}`;
-      }
-      return `https://vidsrc.cc/v2/embed/movie/${id}`;
-    }
-  },
   vidlink: {
     name: 'VidLink',
     supportsStartTime: true,
@@ -72,92 +62,6 @@ const SERVERS = {
         return buildUrl(`https://vidlink.pro/tv/${id}/${season}/${episode}`, params);
       }
       return buildUrl(`https://vidlink.pro/movie/${id}`, params);
-    }
-  },
-  vidsrc_me: {
-    name: 'VidSrc ME',
-    supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode) => {
-      if (mediaType === 'tv') {
-        return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`;
-      }
-      return `https://vidsrc.me/embed/movie?tmdb=${id}`;
-    }
-  },
-  rive: {
-    name: 'RiveStream',
-    supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode) => {
-      if (mediaType === 'tv') {
-        return `https://rive.stream/embed?type=tv&id=${id}&s=${season}&e=${episode}`;
-      }
-      return `https://rive.stream/embed?type=movie&id=${id}`;
-    }
-  },
-  vidsrcvip: {
-    name: 'VidSrc VIP',
-    supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode) => {
-      if (mediaType === 'tv') {
-        return `https://vidsrc.vip/embed/tv/${id}/${season}/${episode}`;
-      }
-      return `https://vidsrc.vip/embed/movie/${id}`;
-    }
-  },
-  autoembed: {
-    name: 'AutoEmbed',
-    supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode) => {
-      if (mediaType === 'tv') {
-        return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}?autohide=1`;
-      }
-      return `https://autoembed.co/movie/tmdb/${id}?autohide=1`;
-    }
-  },
-  vidapi: {
-    name: 'VidAPI',
-    supportsStartTime: true,
-    getUrl: (mediaType, id, season, episode, startAt = 0) => {
-      const baseUrl = mediaType === 'tv'
-        ? `https://vaplayer.ru/embed/tv/${id}/${season}/${episode}`
-        : `https://vaplayer.ru/embed/movie/${id}`;
-
-      return buildUrl(baseUrl, {
-        primaryColor: 'e50914',
-        autoplay: '1',
-        showTitle: 'false',
-        resumeAt: startAt > 5 ? Math.floor(startAt) : undefined,
-      });
-    }
-  },
-  vidsrc: {
-    name: 'VidSrc.to',
-    supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode) => {
-      if (mediaType === 'tv') {
-        return `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`;
-      }
-      return `https://vidsrc.to/embed/movie/${id}`;
-    }
-  },
-  embedsu: {
-    name: 'Embed.su',
-    supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode) => {
-      if (mediaType === 'tv') {
-        return `https://embed.su/embed/tv/${id}/${season}/${episode}`;
-      }
-      return `https://embed.su/embed/movie/${id}`;
-    }
-  },
-  superembed: {
-    name: 'SuperEmbed',
-    supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode) => {
-      if (mediaType === 'tv') {
-        return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
-      }
-      return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
     }
   }
 };
@@ -567,7 +471,8 @@ export default function StreamPlayer({
     setLoadStatus('loading');
   }, [activeServer]);
 
-  const src = SERVERS[activeServer].getUrl(mediaType, id, activeSeason, activeEpisode, savedProgress);
+  const currentServerKey = SERVERS[activeServer] ? activeServer : 'videasy';
+  const src = SERVERS[currentServerKey].getUrl(mediaType, id, activeSeason, activeEpisode, savedProgress);
 
   return (
     <>
