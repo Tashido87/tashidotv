@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Play, ChevronDown, AlertTriangle, RotateCcw, Loader2, Bookmark, CheckCircle2 } from 'lucide-react';
 import { getTVDetails, getTVSeasonDetails } from '@/lib/tmdb';
 import { useAuth } from '@/components/AuthProvider';
@@ -493,7 +494,7 @@ export default function StreamPlayer({
         </button>
       )}
 
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-start pt-20 md:pt-24 pb-6 overflow-y-auto animate-fade-in">
           {/* Top Panel: Server Selector & TV Episode Controls */}
           <div className="w-full max-w-7xl mx-4 mb-4 px-4 flex flex-col md:flex-row gap-4 items-center justify-between z-20 relative shrink-0">
@@ -733,7 +734,8 @@ export default function StreamPlayer({
               Auto-resume injected into player URL ({fmtTime(savedProgress)})
             </p>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
