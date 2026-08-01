@@ -44,7 +44,7 @@ export default function ContentRow({ title, items = [], mediaType, variant = 'po
         ref={scroller}
         className="scrollbar-hide overflow-x-auto overflow-y-hidden py-4 scroll-smooth transform-gpu will-change-scroll overscroll-x-contain touch-pan-x"
       >
-        <div className="flex gap-4 px-6 lg:px-10 max-w-[1600px] mx-auto">
+        <div className="flex gap-3 px-6 lg:px-10 max-w-[1600px] mx-auto">
           {items.map((item) => (
             <MediaCard
               key={`${item.id}-${item.media_type || mediaType}`}

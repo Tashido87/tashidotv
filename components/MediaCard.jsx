@@ -67,8 +67,8 @@ export default function MediaCard({ item, mediaType = 'movie', variant = 'poster
   const widthClass = isGrid
     ? 'w-full'
     : isBackdrop
-    ? 'w-[320px] md:w-[360px]'
-    : 'w-[160px] md:w-[200px]';
+    ? 'w-[280px] md:w-[320px]'
+    : 'w-[130px] md:w-[155px]';
   const aspect = isBackdrop ? 'aspect-video' : 'aspect-[2/3]';
 
   const toggleWatchlist = async (e) => {
@@ -133,11 +133,11 @@ export default function MediaCard({ item, mediaType = 'movie', variant = 'poster
   return (
     <Link
       href={`/${type}/${item.id}`}
-      className={`group/card transition-all duration-300 hover:scale-105 ${
+      className={`group/card transition-all duration-300 hover:scale-[1.03] ${
         isGrid ? 'w-full' : 'flex-shrink-0 ' + widthClass
       }`}
     >
-      <div className={`relative ${aspect} rounded-2xl overflow-hidden bg-zinc-800 contain-content`}>
+      <div className={`relative ${aspect} rounded-xl overflow-hidden bg-zinc-800 contain-content`}>
         {img ? (
           <Image
             src={img}
@@ -160,14 +160,10 @@ export default function MediaCard({ item, mediaType = 'movie', variant = 'poster
         ) : null}
       </div>
 
-      <div className="flex justify-between items-start gap-2 w-full mt-2.5 px-0.5">
+      <div className="flex justify-between items-start gap-1.5 w-full mt-1.5 px-0.5">
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-medium text-white truncate transition-colors duration-300">
+          <p className="text-[12px] font-medium text-white truncate transition-colors duration-300 leading-tight">
             {title}
-          </p>
-          <p className="text-[11px] text-white/40 mt-0.5 transition-colors duration-300 font-medium">
-            {(item.release_date || item.first_air_date || '').slice(0, 4)}
-            {item.original_language ? ` · ${item.original_language.toUpperCase()}` : ''}
           </p>
         </div>
 

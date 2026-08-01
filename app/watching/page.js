@@ -125,7 +125,7 @@ export default function WatchingPage() {
       {/* Grid container */}
       <div className="transition-all duration-500">
         {items.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-4">
             {items.map((item, index) => {
               const type = item.mediaType || 'movie';
               const progress = item.progress || 0;

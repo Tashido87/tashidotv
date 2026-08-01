@@ -215,7 +215,7 @@ export default function TVShowsPage() {
         {/* Grid Container */}
         <div className="transition-all duration-500">
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-4">
               {skeletonCount.map((_, i) => (
                 <div key={i} className="space-y-3 animate-pulse">
                   <div className="aspect-[2/3] w-full rounded-2xl bg-white/5 border border-white/5" />
@@ -226,7 +226,7 @@ export default function TVShowsPage() {
             </div>
           ) : items.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-4">
                 {items.map((show, index) => (
                   <div
                     key={`${show.id}-${index}`}
