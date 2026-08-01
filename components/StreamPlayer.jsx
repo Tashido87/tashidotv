@@ -38,7 +38,7 @@ const SERVERS = {
     name: 'Videasy (Primary)',
     supportsStartTime: false,
     getUrl: (mediaType, id, season, episode) => {
-      const params = { color: 'e50914' };
+      const params = { color: 'e50914', subtitle: 'en', sub: 'en', lang: 'en' };
       if (mediaType === 'tv') {
         return buildUrl(`https://player.videasy.net/tv/${id}/${season}/${episode}`, params);
       }
@@ -56,6 +56,9 @@ const SERVERS = {
         autoplay: 'true',
         nextButton: 'true',
         subtitles: 'true',
+        defaultSubtitle: 'en',
+        subtitleLanguage: 'en',
+        sub: 'en',
         startTime: startAt > 5 ? Math.floor(startAt) : undefined,
       };
       if (mediaType === 'tv') {
@@ -574,7 +577,7 @@ export default function StreamPlayer({
           </div>
 
           {/* Iframe Player Wrapper */}
-          <div className="w-full max-w-7xl flex-1 mx-4 rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 relative max-h-[85vh] min-h-[55vh] shrink-0 md:shrink">
+          <div className="w-full max-w-6xl aspect-[16/9] mx-4 rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 relative shrink-0">
             <style dangerouslySetInnerHTML={{ __html: `
               .stream-iframe-player {
                 width: 100% !important;
