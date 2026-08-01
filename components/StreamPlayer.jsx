@@ -34,8 +34,18 @@ const buildUrl = (baseUrl, params = {}) => {
 };
 
 const SERVERS = {
+  vidsrc_cc: {
+    name: 'VidSrc CC (Fast)',
+    supportsStartTime: false,
+    getUrl: (mediaType, id, season, episode) => {
+      if (mediaType === 'tv') {
+        return `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}`;
+      }
+      return `https://vidsrc.cc/v2/embed/movie/${id}`;
+    }
+  },
   vidlink: {
-    name: 'VidLink (Primary)',
+    name: 'VidLink',
     supportsStartTime: true,
     getUrl: (mediaType, id, season, episode, startAt = 0) => {
       const params = {
@@ -51,6 +61,16 @@ const SERVERS = {
         return buildUrl(`https://vidlink.pro/tv/${id}/${season}/${episode}`, params);
       }
       return buildUrl(`https://vidlink.pro/movie/${id}`, params);
+    }
+  },
+  vidsrc_me: {
+    name: 'VidSrc ME',
+    supportsStartTime: false,
+    getUrl: (mediaType, id, season, episode) => {
+      if (mediaType === 'tv') {
+        return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`;
+      }
+      return `https://vidsrc.me/embed/movie?tmdb=${id}`;
     }
   },
   rive: {
