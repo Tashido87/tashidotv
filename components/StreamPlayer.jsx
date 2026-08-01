@@ -39,8 +39,12 @@ const SERVERS = {
     supportsStartTime: true,
     getUrl: (mediaType, id, season, episode, startAt = 0) => {
       const params = {
-        primaryColor: 'ffffff',
-        autoplay: 'false',
+        primaryColor: 'e50914',
+        secondaryColor: '121212',
+        iconColor: 'ffffff',
+        autoplay: 'true',
+        nextButton: 'true',
+        subtitles: 'true',
         startTime: startAt > 5 ? Math.floor(startAt) : undefined,
       };
       if (mediaType === 'tv') {
@@ -49,10 +53,30 @@ const SERVERS = {
       return buildUrl(`https://vidlink.pro/movie/${id}`, params);
     }
   },
+  rive: {
+    name: 'RiveStream',
+    supportsStartTime: false,
+    getUrl: (mediaType, id, season, episode) => {
+      if (mediaType === 'tv') {
+        return `https://rive.stream/embed?type=tv&id=${id}&s=${season}&e=${episode}`;
+      }
+      return `https://rive.stream/embed?type=movie&id=${id}`;
+    }
+  },
+  vidsrcvip: {
+    name: 'VidSrc VIP',
+    supportsStartTime: false,
+    getUrl: (mediaType, id, season, episode) => {
+      if (mediaType === 'tv') {
+        return `https://vidsrc.vip/embed/tv/${id}/${season}/${episode}`;
+      }
+      return `https://vidsrc.vip/embed/movie/${id}`;
+    }
+  },
   autoembed: {
     name: 'AutoEmbed',
     supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode, startAt = 0) => {
+    getUrl: (mediaType, id, season, episode) => {
       if (mediaType === 'tv') {
         return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}?autohide=1`;
       }
@@ -68,17 +92,17 @@ const SERVERS = {
         : `https://vaplayer.ru/embed/movie/${id}`;
 
       return buildUrl(baseUrl, {
-        primaryColor: 'ffffff',
-        autoplay: '0',
+        primaryColor: 'e50914',
+        autoplay: '1',
         showTitle: 'false',
         resumeAt: startAt > 5 ? Math.floor(startAt) : undefined,
       });
     }
   },
   vidsrc: {
-    name: 'VidSrc',
+    name: 'VidSrc.to',
     supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode, startAt = 0) => {
+    getUrl: (mediaType, id, season, episode) => {
       if (mediaType === 'tv') {
         return `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`;
       }
@@ -88,7 +112,7 @@ const SERVERS = {
   embedsu: {
     name: 'Embed.su',
     supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode, startAt = 0) => {
+    getUrl: (mediaType, id, season, episode) => {
       if (mediaType === 'tv') {
         return `https://embed.su/embed/tv/${id}/${season}/${episode}`;
       }
@@ -98,21 +122,11 @@ const SERVERS = {
   superembed: {
     name: 'SuperEmbed',
     supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode, startAt = 0) => {
+    getUrl: (mediaType, id, season, episode) => {
       if (mediaType === 'tv') {
         return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
       }
       return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
-    }
-  },
-  smashy: {
-    name: 'SmashyStream',
-    supportsStartTime: false,
-    getUrl: (mediaType, id, season, episode, startAt = 0) => {
-      if (mediaType === 'tv') {
-        return `https://player.smashy.stream/tv/${id}?s=${season}&e=${episode}`;
-      }
-      return `https://player.smashy.stream/movie/${id}`;
     }
   }
 };
@@ -624,7 +638,7 @@ export default function StreamPlayer({
           </div>
 
           {/* Iframe Player Wrapper */}
-          <div className="w-full max-w-7xl flex-1 mx-4 rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 relative max-h-[75vh] min-h-[50vh] shrink-0 md:shrink">
+          <div className="w-full max-w-7xl flex-1 mx-4 rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 relative max-h-[85vh] min-h-[55vh] shrink-0 md:shrink">
             <style dangerouslySetInnerHTML={{ __html: `
               .stream-iframe-player {
                 width: 100% !important;
