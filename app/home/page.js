@@ -47,7 +47,7 @@ export default function HomePage() {
 
     try {
       unsubscribe = subscribeWatchHistory(user?.uid || null, (items) => {
-        setRecentWatches(items.slice(0, 5));
+        setRecentWatches(items.slice(0, 1));
       });
     } catch (err) {
       console.error('Failed to initialize watch history subscription for home page:', err);
