@@ -175,7 +175,7 @@ export default function StreamPlayer({
   className
 }) {
   const [open, setOpen] = useState(false);
-  const [activeServer, setActiveServer] = useState('vidlink');
+  const [activeServer, setActiveServer] = useState('videasy');
   const [activeSeason, setActiveSeason] = useState(season || 1);
   const [activeEpisode, setActiveEpisode] = useState(episode || 1);
   const [tvDetails, setTvDetails] = useState(null);
