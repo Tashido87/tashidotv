@@ -34,8 +34,19 @@ const buildUrl = (baseUrl, params = {}) => {
 };
 
 const SERVERS = {
+  videasy: {
+    name: 'Videasy (Primary)',
+    supportsStartTime: false,
+    getUrl: (mediaType, id, season, episode) => {
+      const params = { color: 'e50914' };
+      if (mediaType === 'tv') {
+        return buildUrl(`https://player.videasy.net/tv/${id}/${season}/${episode}`, params);
+      }
+      return buildUrl(`https://player.videasy.net/movie/${id}`, params);
+    }
+  },
   vidsrc_cc: {
-    name: 'VidSrc CC (Fast)',
+    name: 'VidSrc CC',
     supportsStartTime: false,
     getUrl: (mediaType, id, season, episode) => {
       if (mediaType === 'tv') {
