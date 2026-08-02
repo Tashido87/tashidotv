@@ -580,12 +580,16 @@ export default function StreamPlayer({
           {/* Iframe Player Wrapper */}
           <div className="w-full max-w-6xl aspect-[16/9] mx-4 rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 relative shrink-0">
             <style dangerouslySetInnerHTML={{ __html: `
-              .stream-iframe-player {
-                width: 100% !important;
-                height: 100% !important;
-                position: absolute;
-                top: 0;
-                left: 0;
+              iframe.stream-iframe-player:fullscreen,
+              iframe.stream-iframe-player:-webkit-full-screen,
+              iframe.stream-iframe-player:-moz-full-screen {
+                width: 100vw !important;
+                height: 100vh !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                z-index: 999999 !important;
+                border-radius: 0 !important;
               }
             `}} />
             {!loadingProgress ? (
@@ -594,9 +598,11 @@ export default function StreamPlayer({
                 src={src}
                 allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
                 allowFullScreen
+                webkitallowfullscreen="true"
+                mozallowfullscreen="true"
                 loading="eager"
                 onLoad={() => setLoadStatus('loaded')}
-                className="stream-iframe-player border-0 w-full h-full max-w-full max-h-full m-auto"
+                className="stream-iframe-player border-0 absolute inset-0 w-full h-full"
                 title="Stream Player"
               />
             ) : null}
