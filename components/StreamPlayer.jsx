@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Play, ChevronDown, AlertTriangle, RotateCcw, Loader2, Bookmark, CheckCircle2 } from 'lucide-react';
+import { X, Play, ChevronDown, AlertTriangle, RotateCcw, Loader2, Bookmark, CheckCircle2, Maximize, Minimize } from 'lucide-react';
 import { getTVDetails, getTVSeasonDetails } from '@/lib/tmdb';
 import { useAuth } from '@/components/AuthProvider';
 import { getWatchProgress, setWatchProgress, deleteWatchProgress, getAllWatchHistory } from '@/lib/db';
@@ -88,6 +88,29 @@ export default function StreamPlayer({
   const [activeEpisode, setActiveEpisode] = useState(episode || 1);
   const [tvDetails, setTvDetails] = useState(null);
   const [seasonDetails, setSeasonDetails] = useState(null);
+  const [saveProgressError, setSaveProgressError] = useState('');
+
+  // Container ref for app-level fullscreen
+  const playerContainerRef = useRef(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Fullscreen event listener
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      playerContainerRef.current?.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+  };
+
   const [savedProgress, setSavedProgress] = useState(0);
   const [loadStatus, setLoadStatus] = useState('idle');
 
@@ -495,9 +518,9 @@ export default function StreamPlayer({
       )}
 
       {open && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-start pt-20 md:pt-24 pb-6 overflow-y-auto animate-fade-in">
+        <div ref={playerContainerRef} className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-start pt-20 md:pt-24 pb-6 overflow-y-auto animate-fade-in">
           {/* Top Panel: Server Selector & TV Episode Controls */}
-          <div className="w-full max-w-7xl mx-4 mb-4 px-4 flex flex-col md:flex-row gap-4 items-center justify-between z-20 relative shrink-0">
+          <div className={`w-full max-w-7xl mx-4 mb-4 px-4 flex flex-col md:flex-row gap-4 items-center justify-between z-20 relative shrink-0 transition-opacity duration-300 ${isFullscreen ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
             {/* Servers */}
             <div className="flex w-full md:w-auto overflow-x-auto scrollbar-hide gap-2 p-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
               {Object.entries(SERVERS).map(([key, server]) => (
@@ -567,18 +590,27 @@ export default function StreamPlayer({
               </div>
             )}
 
-            {/* Close Button */}
-            <button
-              onClick={() => setOpen(false)}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition"
-              aria-label="Close player"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {/* Fullscreen and Close Buttons */}
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={toggleFullscreen}
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition text-white"
+                aria-label="Toggle Fullscreen"
+              >
+                {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition text-white"
+                aria-label="Close player"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Iframe Player Wrapper */}
-          <div className="w-full max-w-6xl aspect-[16/9] mx-4 rounded-2xl overflow-hidden shadow-2xl bg-black border border-white/10 relative shrink-0">
+          <div className={`w-full transition-all duration-300 ${isFullscreen ? 'max-w-none h-[calc(100vh-200px)] rounded-none' : 'max-w-6xl aspect-[16/9] rounded-2xl'} mx-4 overflow-hidden shadow-2xl bg-black border border-white/10 relative shrink-0`}>
             <style dangerouslySetInnerHTML={{ __html: `
               iframe.stream-iframe-player:fullscreen,
               iframe.stream-iframe-player:-webkit-full-screen,
@@ -596,7 +628,7 @@ export default function StreamPlayer({
               <iframe
                 key={`${activeServer}-${activeSeason}-${activeEpisode}`}
                 src={src}
-                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                allow="autoplay *; fullscreen *; encrypted-media *; picture-in-picture *; display-capture *; accelerometer *; gyroscope *"
                 allowFullScreen
                 webkitallowfullscreen="true"
                 mozallowfullscreen="true"
