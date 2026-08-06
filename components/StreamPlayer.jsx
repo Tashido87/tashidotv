@@ -35,8 +35,18 @@ const buildUrl = (baseUrl, params = {}) => {
 };
 
 const SERVERS = {
+  dulo: {
+    name: 'Dulo (Primary)',
+    supportsStartTime: false,
+    getUrl: (mediaType, id, season, episode) => {
+      if (mediaType === 'tv') {
+        return `https://dulo.cx/embed/tv/${id}/${season}/${episode}`;
+      }
+      return `https://dulo.cx/embed/movie/${id}`;
+    }
+  },
   videasy: {
-    name: 'Videasy (Primary)',
+    name: 'Videasy',
     supportsStartTime: false,
     getUrl: (mediaType, id, season, episode) => {
       const params = { color: 'e50914', subtitle: 'en', sub: 'en', lang: 'en' };
@@ -83,7 +93,7 @@ export default function StreamPlayer({
   className
 }) {
   const [open, setOpen] = useState(false);
-  const [activeServer, setActiveServer] = useState('videasy');
+  const [activeServer, setActiveServer] = useState('dulo');
   const [activeSeason, setActiveSeason] = useState(season || 1);
   const [activeEpisode, setActiveEpisode] = useState(episode || 1);
   const [tvDetails, setTvDetails] = useState(null);
