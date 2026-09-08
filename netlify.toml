@@ -1,6 +1,14 @@
 [build]
   command = "npm run build"
-  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
+
+# Firebase's Google sign-in helper normally lives on the project's
+# firebaseapp.com domain. Proxy it through this site's Netlify domain so the
+# browser keeps a first-party connection to the deployed app.
+[[redirects]]
+  from = "/__/auth/*"
+  to = "https://tashido-tv.firebaseapp.com/__/auth/:splat"
+  status = 200
+  force = true
