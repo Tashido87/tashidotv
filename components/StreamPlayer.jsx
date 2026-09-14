@@ -113,6 +113,7 @@ export default function StreamPlayer({
 
   const [savedProgress, setSavedProgress] = useState(0);
   const [loadStatus, setLoadStatus] = useState('idle');
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [manualTime, setManualTime] = useState('00:00:00');
   const [durationEstimate, setDurationEstimate] = useState(0);
@@ -468,9 +469,13 @@ export default function StreamPlayer({
     return () => window.removeEventListener('message', handlePlayerMessage);
   }, [open, saveProgress, user, mediaType, id, title, tvDetails, posterPath, backdropPath, activeSeason, activeEpisode]);
 
-  // Track iframe load status with timeout-based error detection
+  const currentServerKey = SERVERS[activeServer] ? activeServer : 'videasy';
+  const src = SERVERS[currentServerKey].getUrl(mediaType, id, activeSeason, activeEpisode, savedProgress);
+
+  // A frame load event does not prove its video can play. Keep recovery
+  // controls available even after load, and do not diagnose an ISP block here.
   useEffect(() => {
-    if (!open) {
+    if (!open || loadingProgress) {
       setLoadStatus('idle');
       return;
     }
@@ -488,7 +493,7 @@ export default function StreamPlayer({
       clearTimeout(slowTimer);
       clearTimeout(errorTimer);
     };
-  }, [open, activeServer, activeSeason, activeEpisode]);
+  }, [open, loadingProgress, src, reloadKey]);
 
   const tryNextServer = useCallback(() => {
     const keys = Object.keys(SERVERS);
@@ -497,9 +502,6 @@ export default function StreamPlayer({
     setActiveServer(next);
     setLoadStatus('loading');
   }, [activeServer]);
-
-  const currentServerKey = SERVERS[activeServer] ? activeServer : 'videasy';
-  const src = SERVERS[currentServerKey].getUrl(mediaType, id, activeSeason, activeEpisode, savedProgress);
 
   return (
     <>
@@ -526,7 +528,7 @@ export default function StreamPlayer({
               {Object.entries(SERVERS).map(([key, server]) => (
                 <button
                   key={key}
-                  onClick={() => { setActiveServer(key); setLoadStatus('loading'); }}
+                  onClick={() => { setActiveServer(key); setReloadKey(value => value + 1); setLoadStatus('loading'); }}
                   className={`px-4 py-1.5 whitespace-nowrap shrink-0 rounded-full text-xs font-semibold transition-all duration-300 ${
                     activeServer === key
                       ? 'bg-white text-black shadow-lg scale-[1.02]'
@@ -626,12 +628,9 @@ export default function StreamPlayer({
             `}} />
             {!loadingProgress ? (
               <iframe
-                key={`${activeServer}-${activeSeason}-${activeEpisode}`}
+                key={`${id}-${activeServer}-${activeSeason}-${activeEpisode}-${reloadKey}`}
                 src={src}
                 allow="autoplay *; fullscreen *; encrypted-media *; picture-in-picture *; display-capture *; accelerometer *; gyroscope *"
-                allowFullScreen
-                webkitallowfullscreen="true"
-                mozallowfullscreen="true"
                 loading="eager"
                 onLoad={() => setLoadStatus('loaded')}
                 className="stream-iframe-player border-0 absolute inset-0 w-full h-full"
@@ -665,9 +664,9 @@ export default function StreamPlayer({
                   <div className="flex flex-col items-center gap-4 text-center px-6">
                     <AlertTriangle className="w-10 h-10 text-yellow-500" />
                     <div>
-                      <p className="text-[15px] font-semibold text-white/90 mb-1">Server Unavailable</p>
+                      <p className="text-[15px] font-semibold text-white/90 mb-1">Player is taking longer to load</p>
                       <p className="text-[12px] text-white/50 max-w-sm">
-                        This streaming source is not responding. Switch to another server below.
+                        You can try another server or wait for this player to load.
                       </p>
                     </div>
                     <button
@@ -684,6 +683,28 @@ export default function StreamPlayer({
                 )}
               </div>
             )}
+          </div>
+
+          <div className="w-full max-w-6xl px-4 mt-3 flex flex-wrap items-center gap-3 text-xs text-white/60">
+            <span>Video stuck or blank?</span>
+            <button
+              onClick={() => { setReloadKey(value => value + 1); setLoadStatus('loading'); }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-3 py-1.5 text-white hover:bg-white/10"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Reload player
+            </button>
+            <button onClick={tryNextServer} className="rounded-full border border-white/20 px-3 py-1.5 text-white hover:bg-white/10">
+              Try another server
+            </button>
+            <details className="w-full">
+              <summary className="cursor-pointer hover:text-white">Playback help</summary>
+              <p className="mt-2 max-w-2xl leading-relaxed">
+                If you see “Paused in debugger”, resume execution in your browser’s developer tools,
+                then close developer tools and reload the player. If playback still fails, try
+                another server or network. External video services may be unavailable even when
+                this website loads.
+              </p>
+            </details>
           </div>
  
           {/* Subtitle Info Toast for AutoEmbed/VidAPI */}

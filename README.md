@@ -20,12 +20,38 @@ Then open http://localhost:3000.
 
 ## Environment
 
-A working API key is included in `.env.local`. Replace if needed:
+Set the following in `.env.local` and in your hosting provider's environment settings:
 
 ```
-NEXT_PUBLIC_TMDB_API_KEY=your_key
-NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
+TMDB_API_KEY=your_key
 ```
+
+The server also accepts the existing `NEXT_PUBLIC_TMDB_API_KEY` as a migration
+fallback, so existing deployments can be rebuilt without changing their settings.
+New installations should use `TMDB_API_KEY`. The browser no longer reads this key.
+Upstream TMDB hosts are fixed; `NEXT_PUBLIC_TMDB_BASE_URL` is no longer used.
+
+## Network access and deployment
+
+Catalog requests use `/api/tmdb/...`; posters, backdrops and cast photos use
+`/api/tmdb-image/...`. These routes fetch TMDB on the server and cache successful
+responses. They allow only supported catalog paths and image sizes, reject
+arbitrary URLs and redirects, and never cache error responses in the browser/CDN.
+Keep `images.unoptimized` enabled: the image route already serves cached images
+for both Next Image and plain image elements.
+
+Deploy with the Next.js runtime (Vercel or Netlify's Next.js integration), not a
+static export. Rebuild/redeploy to apply these changes. Test without VPN on the
+target network: open Home, search, and a detail page; confirm images and catalog
+requests use your website's `/api/` paths and return 200.
+
+External video embeds and Firebase still make their own network connections.
+The app cannot repair requests inside a cross-origin video player or resume a
+browser debugger. The player provides manual reload/server switching and help.
+An iframe `load` event does not confirm successful playback. Test playback and
+sign-in separately; these changes cannot fix blocking of the website itself.
+
+Run proxy regression checks with `node --test tests/tmdb-proxy.test.mjs`.
 
 ## Structure
 
